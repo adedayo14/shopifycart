@@ -1,0 +1,29 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+# This will be filled in when you create your app
+client_id = ""
+name = "Cart Progress Bar App"
+handle = "cart-progress-bar-app"
+
+# You'll need to update this URL when you deploy
+application_url = "http://localhost:3000?host={{HOST}}&shop={{SHOP}}"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,write_themes,read_themes"
+
+[auth]
+redirect_urls = [
+  "http://localhost:3000/api/auth",
+  "http://localhost:3000/api/auth/callback"
+]
+
+[pos]
+embedded = false

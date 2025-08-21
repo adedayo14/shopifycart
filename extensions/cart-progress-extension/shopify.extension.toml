@@ -1,0 +1,12 @@
+name = "cart-progress-extension"
+type = "theme"
+metafields = []
+
+[capabilities]
+checkout_ui_extension = false
+
+[capabilities.app_proxy]
+include_paths = []
+
+[capabilities.pos]
+include_paths = []
