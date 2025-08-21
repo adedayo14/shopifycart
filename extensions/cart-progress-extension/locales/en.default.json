@@ -1,0 +1,11 @@
+{
+  "cart_progress": {
+    "free_shipping_message": "Add {amount} more for free shipping!",
+    "gift_unlocked": "Free gift unlocked!",
+    "discount_unlocked": "Discount unlocked: {code}",
+    "all_rewards_unlocked": "Congratulations! You have unlocked all rewards.",
+    "add_to_cart": "Add+",
+    "adding_to_cart": "Adding...",
+    "added_to_cart": "Added!"
+  }
+}

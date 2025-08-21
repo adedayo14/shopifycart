@@ -1,0 +1,285 @@
+{% comment %}
+This block displays a cart progress bar with free shipping, gift and discount goals.
+The progress bar updates in real time based on the cart total.
+{% endcomment %}
+
+<div id="progress-bar-container"
+     class="cart-progress-bar"
+     data-threshold="{{ block.settings.free_shipping_threshold }}"
+     data-gift-threshold="{{ block.settings.gift_threshold }}"
+     data-discount-threshold="{{ block.settings.discount_threshold }}"
+     data-currency="{{ shop.currency }}"
+     data-gift-product-id="{{ block.settings.gift_product.id }}"
+     data-bar-style="{{ block.settings.bar_style }}"
+     data-hide-when-reached="{{ block.settings.hide_when_reached }}">
+  
+  <div class="progress-bar-track" 
+       style="background-color: {{ block.settings.bar_background }}; 
+              height: {{ block.settings.font_size }}px; 
+              border-radius: {{ block.settings.corner_radius }}px; 
+              overflow: hidden;">
+    <div class="progress-bar-fill" 
+         style="background-color: {{ block.settings.bar_color }}; 
+                width: 0%; 
+                height: 100%; 
+                transition: width 0.4s;"></div>
+  </div>
+  
+  <p class="progress-bar-message" 
+     style="margin-top: 8px; 
+            color: {{ block.settings.text_color }}; 
+            font-size: {{ block.settings.font_size }}px;"
+     {% if block.settings.a11y_live_region %}role="status" aria-live="polite"{% endif %}>
+    {{ block.settings.free_shipping_text }}
+  </p>
+</div>
+
+{% comment %} Manual Product Recommendations {% endcomment %}
+{% if block.settings.show_recommendations %}
+  <div class="product-recommendations">
+    {% for block in section.blocks %}
+      {% case block.type %}
+        {% when 'product_recommendation' %}
+          {% assign product = block.settings.product %}
+          {% if product != blank %}
+            <div class="recommendation-item" data-product-id="{{ product.id }}">
+              <img src="{{ product.featured_image | img_url: '100x100' }}" alt="{{ product.title }}">
+              <h4>{{ product.title }}</h4>
+              <p class="price">{{ product.price | money }}</p>
+              
+              {% if product.has_only_default_variant %}
+                <button class="add-to-cart-btn" 
+                        data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+                        data-quantity="1">
+                  {{ block.settings.cta_text | default: "Add+" }}
+                </button>
+              {% else %}
+                <div class="variant-selectors">
+                  {% for option in product.options_with_values %}
+                    <label for="option-{{ option.name | handle }}">{{ option.name }}:</label>
+                    <select name="option-{{ option.name | handle }}" data-option-position="{{ option.position }}">
+                      {% for value in option.values %}
+                        <option value="{{ value }}">{{ value }}</option>
+                      {% endfor %}
+                    </select>
+                  {% endfor %}
+                  <button class="add-to-cart-btn" data-product-id="{{ product.id }}">
+                    {{ block.settings.cta_text | default: "Add+" }}
+                  </button>
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+      {% endcase %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Cart Progress Bar",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Goals"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_free_shipping",
+      "label": "Enable Free Shipping Goal",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free Shipping Threshold",
+      "default": 50
+    },
+    {
+      "type": "text",
+      "id": "free_shipping_text",
+      "label": "Free Shipping Text",
+      "default": "Spend £{amount} more for free shipping!"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_discount_goal",
+      "label": "Enable Discount Goal",
+      "default": false
+    },
+    {
+      "type": "number",
+      "id": "discount_threshold",
+      "label": "Discount Threshold",
+      "default": 100
+    },
+    {
+      "type": "text",
+      "id": "discount_code",
+      "label": "Discount Code",
+      "default": "SAVE10"
+    },
+    {
+      "type": "text",
+      "id": "discount_text",
+      "label": "Discount Text",
+      "default": "Discount unlocked: {code}"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_gift_goal",
+      "label": "Enable Gift Goal",
+      "default": false
+    },
+    {
+      "type": "number",
+      "id": "gift_threshold",
+      "label": "Gift Threshold",
+      "default": 75
+    },
+    {
+      "type": "product",
+      "id": "gift_product",
+      "label": "Gift Product"
+    },
+    {
+      "type": "text",
+      "id": "gift_text",
+      "label": "Gift Text",
+      "default": "Free gift unlocked!"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_when_reached",
+      "label": "Hide bar when all goals reached",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Design"
+    },
+    {
+      "type": "select",
+      "id": "bar_style",
+      "label": "Bar Style",
+      "options": [
+        { "value": "linear", "label": "Linear" },
+        { "value": "pill", "label": "Pill" },
+        { "value": "thin", "label": "Thin" }
+      ],
+      "default": "linear"
+    },
+    {
+      "type": "color",
+      "id": "bar_color",
+      "label": "Bar Color",
+      "default": "#e6c173"
+    },
+    {
+      "type": "color",
+      "id": "bar_background",
+      "label": "Bar Background",
+      "default": "#ddd"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "Font Size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "Corner Radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "cart_page", "label": "Cart Page" },
+        { "value": "cart_drawer", "label": "Cart Drawer" },
+        { "value": "both", "label": "Both" }
+      ],
+      "default": "cart_drawer"
+    },
+    {
+      "type": "header",
+      "content": "Behavior"
+    },
+    {
+      "type": "checkbox",
+      "id": "animate_transitions",
+      "label": "Animate Transitions",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "a11y_live_region",
+      "label": "Accessibility Live Region",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Recommendations"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_recommendations",
+      "label": "Show Product Recommendations",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_recommendation",
+      "name": "Product Recommendation",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "checkbox",
+          "id": "preselect_first_available",
+          "label": "Preselect First Available Variant",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_swatches",
+          "label": "Show Color Swatches",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "show_size_dropdown",
+          "label": "Show Size Dropdown",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "cta_text",
+          "label": "Call to Action Text",
+          "default": "Add+"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
