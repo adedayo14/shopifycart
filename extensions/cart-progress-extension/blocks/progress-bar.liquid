@@ -34,46 +34,54 @@ The progress bar updates in real time based on the cart total.
   </p>
 </div>
 
-{% comment %} Manual Product Recommendations {% endcomment %}
+{% comment %} Product Recommendations - Manual Configuration Only {% endcomment %}
 {% if block.settings.show_recommendations %}
   <div class="product-recommendations">
-    {% for block in section.blocks %}
-      {% case block.type %}
-        {% when 'product_recommendation' %}
-          {% assign product = block.settings.product %}
-          {% if product != blank %}
-            <div class="recommendation-item" data-product-id="{{ product.id }}">
-              <img src="{{ product.featured_image | img_url: '100x100' }}" alt="{{ product.title }}">
-              <h4>{{ product.title }}</h4>
-              <p class="price">{{ product.price | money }}</p>
-              
-              {% if product.has_only_default_variant %}
-                <button class="add-to-cart-btn" 
-                        data-variant-id="{{ product.selected_or_first_available_variant.id }}"
-                        data-quantity="1">
-                  {{ block.settings.cta_text | default: "Add+" }}
-                </button>
-              {% else %}
-                <div class="variant-selectors">
-                  {% for option in product.options_with_values %}
-                    <label for="option-{{ option.name | handle }}">{{ option.name }}:</label>
-                    <select name="option-{{ option.name | handle }}" data-option-position="{{ option.position }}">
-                      {% for value in option.values %}
-                        <option value="{{ value }}">{{ value }}</option>
-                      {% endfor %}
-                    </select>
+    {% assign product1 = block.settings.product_1 %}
+    {% assign product2 = block.settings.product_2 %}
+    {% assign product3 = block.settings.product_3 %}
+    
+    {% for product in (1..3) %}
+      {% capture product_key %}product_{{ product }}{% endcapture %}
+      {% assign current_product = block.settings[product_key] %}
+      
+      {% if current_product != blank %}
+        <div class="recommendation-item" data-product-id="{{ current_product.id }}">
+          <img src="{{ current_product.featured_image | image_url: width: 100, height: 100 }}" 
+               alt="{{ current_product.title }}"
+               width="100" 
+               height="100">
+          <h4>{{ current_product.title }}</h4>
+          <p class="price">{{ current_product.price | money }}</p>
+          
+          {% if current_product.has_only_default_variant %}
+            <button class="add-to-cart-btn" 
+                    data-variant-id="{{ current_product.selected_or_first_available_variant.id }}"
+                    data-quantity="1">
+              {{ block.settings.cta_text | default: "Add+" }}
+            </button>
+          {% else %}
+            <div class="variant-selectors">
+              {% for option in current_product.options_with_values %}
+                <label for="option-{{ option.name | handle }}-{{ product }}">{{ option.name }}:</label>
+                <select name="option-{{ option.name | handle }}-{{ product }}" data-option-position="{{ option.position }}">
+                  {% for value in option.values %}
+                    <option value="{{ value }}">{{ value }}</option>
                   {% endfor %}
-                  <button class="add-to-cart-btn" data-product-id="{{ product.id }}">
-                    {{ block.settings.cta_text | default: "Add+" }}
-                  </button>
-                </div>
-              {% endif %}
+                </select>
+              {% endfor %}
+              <button class="add-to-cart-btn" data-product-id="{{ current_product.id }}">
+                {{ block.settings.cta_text | default: "Add+" }}
+              </button>
             </div>
           {% endif %}
-      {% endcase %}
+        </div>
+      {% endif %}
     {% endfor %}
   </div>
 {% endif %}
+
+<script src="{{ 'cart-progress.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -235,50 +243,34 @@ The progress bar updates in real time based on the cart total.
     },
     {
       "type": "header",
-      "content": "Recommendations"
+      "content": "Product Recommendations"
     },
     {
       "type": "checkbox",
       "id": "show_recommendations",
       "label": "Show Product Recommendations",
       "default": true
-    }
-  ],
-  "blocks": [
+    },
     {
-      "type": "product_recommendation",
-      "name": "Product Recommendation",
-      "settings": [
-        {
-          "type": "product",
-          "id": "product",
-          "label": "Product"
-        },
-        {
-          "type": "checkbox",
-          "id": "preselect_first_available",
-          "label": "Preselect First Available Variant",
-          "default": true
-        },
-        {
-          "type": "checkbox",
-          "id": "show_swatches",
-          "label": "Show Color Swatches",
-          "default": false
-        },
-        {
-          "type": "checkbox",
-          "id": "show_size_dropdown",
-          "label": "Show Size Dropdown",
-          "default": true
-        },
-        {
-          "type": "text",
-          "id": "cta_text",
-          "label": "Call to Action Text",
-          "default": "Add+"
-        }
-      ]
+      "type": "product",
+      "id": "product_1",
+      "label": "Recommendation Product 1"
+    },
+    {
+      "type": "product",
+      "id": "product_2",
+      "label": "Recommendation Product 2"
+    },
+    {
+      "type": "product",
+      "id": "product_3",
+      "label": "Recommendation Product 3"
+    },
+    {
+      "type": "text",
+      "id": "cta_text",
+      "label": "Call to Action Text",
+      "default": "Add+"
     }
   ]
 }
