@@ -1,12 +1,42 @@
+# File: extensions/cart-progress-extension/shopify.extension.toml
+# Theme App Extension Configuration
+
+api_version = "2024-10"
+
+[[extensions]]
 name = "cart-progress-extension"
 type = "theme"
-metafields = []
 
-[capabilities]
-checkout_ui_extension = false
+[extensions.settings]
+name = "Cart Progress & Recommendations"
+description = "Modern cart drawer with progress bar, product recommendations, and rewards system"
 
-[capabilities.app_proxy]
-include_paths = []
+[[extensions.settings.configuration]]
+name = "General Settings"
+settings = [
+  { key = "enable_progress_bar", type = "boolean", default = true, label = "Enable Progress Bar" },
+  { key = "enable_recommendations", type = "boolean", default = true, label = "Enable Product Recommendations" },
+  { key = "enable_express_checkout", type = "boolean", default = true, label = "Enable Express Checkout" }
+]
 
-[capabilities.pos]
-include_paths = []
+[[extensions.settings.configuration]]
+name = "Progress Bar Settings"
+settings = [
+  { key = "free_shipping_threshold", type = "number", default = 50, label = "Free Shipping Threshold" },
+  { key = "gift_threshold", type = "number", default = 75, label = "Gift Threshold" },
+  { key = "discount_threshold", type = "number", default = 100, label = "Discount Threshold" },
+  { key = "progress_color", type = "color", default = "#000000", label = "Progress Color" },
+  { key = "track_color", type = "color", default = "#e5e5e5", label = "Track Color" }
+]
+
+[[extensions.settings.configuration]]
+name = "Recommendations"
+settings = [
+  { key = "recommendations_title", type = "text", default = "RECOMMENDED FOR YOU", label = "Section Title" },
+  { key = "max_recommendations", type = "range", default = 3, min = 1, max = 5, label = "Number of Products" },
+  { key = "recommendation_source", type = "select", default = "manual", options = [
+    { label = "Manual Selection", value = "manual" },
+    { label = "Related Products", value = "related" },
+    { key = "Best Sellers", value = "bestsellers" }
+  ]}
+]
