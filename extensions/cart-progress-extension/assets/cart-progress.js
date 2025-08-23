@@ -71,8 +71,8 @@ console.log('[ProgressBar] Cart progress script loaded!');
               if (node.matches('[data-cart-progress]') || 
                   node.querySelector('[data-cart-progress]') ||
                   node.matches('[data-cart-drawer], .cart-drawer, #CartDrawer, .drawer') ||
-                  node.className.includes('drawer') ||
-                  node.id.includes('drawer')) {
+                  (node.className && node.className.indexOf && node.className.indexOf('drawer') > -1) ||
+                  (node.id && node.id.indexOf && node.id.indexOf('drawer') > -1)) {
                 console.log('[ProgressBar] Cart drawer or progress bar detected in DOM:', node);
                 shouldReinitialize = true;
               }

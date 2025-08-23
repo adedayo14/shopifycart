@@ -5,7 +5,7 @@
 
 {{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
 
-<div class="cart-recommendations-section">
+<div class="cart-recommendations-section" data-cart-recommendations>
   <div class="recommendations-header">
     <h3 class="recommendations-title">
       {{ block.settings.title | default: 'RECOMMENDED FOR YOU' }}
@@ -147,7 +147,14 @@
   </div>
 </div>
 
-<script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
+<script src="{{ 'cart-recommendations-simple.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
+
+{%- comment -%}
+  Inline cart items container (optional): This enables instant visual cart updates
+  without full page refresh when recommendations add items. Remove if your theme
+  already renders cart lines dynamically elsewhere.
+{%- endcomment -%}
+<div class="inline-cart-items" data-cart-items style="display:none"></div>
 
 <style>
   /* Dynamic color swatches */

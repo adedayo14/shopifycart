@@ -6,12 +6,42 @@
   padding: 16px 16px 48px 16px;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e5;
-  position: relative;
-  z-index: 100;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* For iOS Safari support */
+.cart-progress-container {
+  position: -webkit-sticky;
+}
+
+/* Ensure parent containers allow sticky positioning */
+.cart-drawer,
+.drawer,
+[data-cart-drawer],
+.cart-sidebar,
+.mini-cart,
+.cart-popup,
+.cart-flyout,
+#CartDrawer,
+.js-drawer,
+.drawer--open,
+.is-open,
+.cart-drawer-content,
+.cart-notification,
+.cart-drawer__content,
+.cart__drawer,
+[id*="cart-drawer"],
+[class*="cart-drawer"],
+[class*="drawer"] {
+  overflow: visible !important;
 }
 
 /* Force visibility in all cart contexts */
@@ -36,8 +66,11 @@
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  position: relative !important;
-  z-index: 1000 !important;
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 9999 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Auto-injected progress bars in cart drawers */
