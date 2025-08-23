@@ -1,0 +1,304 @@
+{% comment %}
+  Auto-inject Cart Progress Bar into Cart Drawers
+  This snippet automatically detects and injects the progress bar into cart drawers
+{% endcomment %}
+
+<script>
+(function() {
+  'use strict';
+  
+  console.log('[ProgressBar] Auto-inject script loaded');
+  
+  const CartProgressAutoInject = {
+    injected: false,
+    
+    init() {
+      console.log('[ProgressBar] Auto-inject initializing...');
+      this.injectIntoExistingDrawers();
+      this.watchForNewDrawers();
+      this.watchForDrawerOpening();
+    },
+    
+    injectIntoExistingDrawers() {
+      const drawers = this.findCartDrawers();
+      console.log('[ProgressBar] Found existing drawers:', drawers.length);
+      
+      drawers.forEach(drawer => {
+        this.injectIntoDrawer(drawer);
+      });
+    },
+    
+    findCartDrawers() {
+      const selectors = [
+        '[data-cart-drawer]',
+        '.cart-drawer',
+        '#CartDrawer',
+        '.drawer',
+        '.cart-drawer-content',
+        '.cart-notification',
+        '.cart-drawer__content',
+        '.cart__drawer',
+        '[id*="cart-drawer"]',
+        '[class*="cart-drawer"]',
+        '.mini-cart',
+        '.cart-popup',
+        '.cart-flyout',
+        '.cart-sidebar'
+      ];
+      
+      const drawers = [];
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+          if (!drawers.includes(el)) {
+            drawers.push(el);
+          }
+        });
+      });
+      
+      return drawers;
+    },
+    
+    injectIntoDrawer(drawer) {
+      if (drawer.querySelector('.cart-progress-auto-injected')) {
+        console.log('[ProgressBar] Already injected into drawer');
+        return;
+      }
+      
+      // Find the original progress bar block on the page (including hidden ones)
+      const originalProgressBar = document.querySelector('[data-cart-progress]:not(.cart-progress-auto-injected)');
+      
+      if (!originalProgressBar) {
+        console.log('[ProgressBar] No original progress bar found, creating default one');
+        // Create a default progress bar if none exists on the page
+        this.createDefaultProgressBar(drawer);
+        return;
+      }
+      
+      console.log('[ProgressBar] Injecting cloned progress bar into drawer:', drawer);
+      
+      // Try to find the best injection point
+      const injectionPoints = [
+        drawer.querySelector('.cart-header'),
+        drawer.querySelector('.cart-drawer-header'),
+        drawer.querySelector('.drawer-header'),
+        drawer.querySelector('.cart-title'),
+        drawer.querySelector('.cart-items-wrapper'),
+        drawer.querySelector('.cart-items'),
+        drawer.querySelector('.drawer-content'),
+        drawer.querySelector('.cart-content'),
+        drawer.firstElementChild
+      ];
+      
+      const injectionPoint = injectionPoints.find(point => point !== null);
+      
+      if (injectionPoint) {
+        // Clone the original progress bar
+        const clonedProgressBar = originalProgressBar.cloneNode(true);
+        clonedProgressBar.classList.add('cart-progress-auto-injected');
+        clonedProgressBar.style.margin = '15px 0';
+        clonedProgressBar.style.padding = '0 15px';
+        
+        // Insert after header or at the beginning
+        if (injectionPoint.matches('.cart-header, .cart-drawer-header, .drawer-header, .cart-title')) {
+          injectionPoint.parentNode.insertBefore(clonedProgressBar, injectionPoint.nextSibling);
+        } else {
+          injectionPoint.parentNode.insertBefore(clonedProgressBar, injectionPoint);
+        }
+        
+        console.log('[ProgressBar] Successfully injected cloned progress bar into drawer');
+        this.injected = true;
+        
+        // Trigger progress bar initialization
+        setTimeout(() => {
+          if (window.ProgressBarManager) {
+            window.ProgressBarManager.cacheElements();
+            window.ProgressBarManager.refresh();
+          }
+        }, 100);
+      } else {
+        console.warn('[ProgressBar] Could not find injection point in drawer');
+      }
+    },
+    
+    createDefaultProgressBar(drawer) {
+      const defaultProgressBarHTML = \`
+        <div class="cart-progress-container cart-progress-visible cart-progress-auto-injected" 
+             data-cart-progress
+             data-block-id="auto-inject-default"
+             data-progress-mode="continuous"
+             data-free-threshold="75"
+             data-gift-threshold="150"
+             data-gift-variant-id=""
+             data-gift-quantity="1"
+             data-gaming-protection="remove"
+             data-currency-symbol="{{ cart.currency.symbol | default: '$' }}"
+             data-progress-color="#000000"
+             data-track-color="#e5e5e5"
+             data-message-color="#121212"
+             data-header-display="cart_and_percentage"
+             data-milestone-color="#666666"
+             data-milestone-achieved-color="#22c55e"
+             data-achievement-symbol="checkmark"
+             data-show-symbol-circle="true"
+             data-message-free-shipping="Add [AMOUNT] more for FREE shipping!"
+             data-message-free-achieved="✅ FREE shipping unlocked!"
+             data-message-gift="Add [AMOUNT] more for your FREE gift!"
+             data-message-gift-achieved="🎁 Free gift added!"
+             data-message-initial="Add items to unlock rewards"
+             data-message-complete="🎉 All rewards unlocked!"
+             style="margin: 15px 0; padding: 0 15px;">
+
+          <div class="cart-progress-header">
+            <span class="cart-progress-title">
+              CART (<span data-cart-count>{{ cart.item_count | default: 0 }}</span>)
+            </span>
+            <span class="cart-progress-message" role="status" aria-live="polite" style="color: #121212;">
+              Add items to unlock rewards
+            </span>
+            <span class="cart-progress-percentage" data-progress-percentage>
+              0%
+            </span>
+          </div>
+
+          <div class="cart-progress-bar-wrapper">
+            <div class="cart-progress-track" style="--track-color: #e5e5e5;">
+              <div class="cart-progress-fill" style="width: 0%; --progress-color: #000000;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              <div class="cart-progress-milestones"></div>
+            </div>
+          </div>
+        </div>
+      \`;
+      
+      const injectionPoints = [
+        drawer.querySelector('.cart-header'),
+        drawer.querySelector('.cart-drawer-header'),
+        drawer.querySelector('.drawer-header'),
+        drawer.querySelector('.cart-title'),
+        drawer.querySelector('.cart-items-wrapper'),
+        drawer.querySelector('.cart-items'),
+        drawer.querySelector('.drawer-content'),
+        drawer.querySelector('.cart-content'),
+        drawer.firstElementChild
+      ];
+      
+      const injectionPoint = injectionPoints.find(point => point !== null);
+      
+      if (injectionPoint) {
+        const progressBarContainer = document.createElement('div');
+        progressBarContainer.innerHTML = defaultProgressBarHTML;
+        
+        if (injectionPoint.matches('.cart-header, .cart-drawer-header, .drawer-header, .cart-title')) {
+          injectionPoint.parentNode.insertBefore(progressBarContainer.firstElementChild, injectionPoint.nextSibling);
+        } else {
+          injectionPoint.parentNode.insertBefore(progressBarContainer.firstElementChild, injectionPoint);
+        }
+        
+        console.log('[ProgressBar] Created default progress bar in drawer');
+        
+        // Trigger progress bar initialization
+        setTimeout(() => {
+          if (window.ProgressBarManager) {
+            window.ProgressBarManager.cacheElements();
+            window.ProgressBarManager.refresh();
+          }
+        }, 100);
+      }
+    },
+    
+    watchForNewDrawers() {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) { // Element node
+              if (this.isCartDrawer(node)) {
+                console.log('[ProgressBar] New cart drawer detected:', node);
+                setTimeout(() => this.injectIntoDrawer(node), 50);
+              }
+              
+              // Check if new drawer was added inside this node
+              const innerDrawers = this.findCartDrawersInNode(node);
+              innerDrawers.forEach(drawer => {
+                setTimeout(() => this.injectIntoDrawer(drawer), 50);
+              });
+            }
+          });
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    },
+    
+    watchForDrawerOpening() {
+      // Common cart drawer opening events
+      const events = [
+        'cart:open', 'drawer:open', 'cart:show', 'drawer:show',
+        'cart-drawer:open', 'cartDrawer:open', 'miniCart:open'
+      ];
+      
+      events.forEach(eventName => {
+        document.addEventListener(eventName, () => {
+          console.log(`[ProgressBar] Cart drawer opened (${eventName})`);
+          setTimeout(() => {
+            this.injectIntoExistingDrawers();
+          }, 100);
+        });
+      });
+      
+      // Watch for cart button clicks that might open drawers
+      document.addEventListener('click', (e) => {
+        const cartTriggers = [
+          '[data-cart-drawer-toggle]',
+          '.cart-drawer-toggle',
+          '.cart-icon',
+          '.cart-link',
+          '[href="/cart"]',
+          '.header__icon--cart',
+          '.cart-count-bubble'
+        ];
+        
+        if (cartTriggers.some(selector => e.target.matches(selector) || e.target.closest(selector))) {
+          console.log('[ProgressBar] Cart trigger clicked, checking for drawer...');
+          setTimeout(() => {
+            this.injectIntoExistingDrawers();
+          }, 200);
+        }
+      });
+    },
+    
+    isCartDrawer(element) {
+      const cartDrawerIndicators = [
+        'cart-drawer', 'drawer', 'cart-notification', 'mini-cart', 
+        'cart-popup', 'cart-flyout', 'cart-sidebar'
+      ];
+      
+      return cartDrawerIndicators.some(indicator => 
+        element.classList.contains(indicator) ||
+        element.id.includes(indicator) ||
+        element.hasAttribute('data-cart-drawer')
+      );
+    },
+    
+    findCartDrawersInNode(node) {
+      if (node.querySelector) {
+        return this.findCartDrawers().filter(drawer => node.contains(drawer));
+      }
+      return [];
+    }
+  };
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => CartProgressAutoInject.init());
+  } else {
+    CartProgressAutoInject.init();
+  }
+  
+  // Also try after a delay for themes that load cart drawers asynchronously
+  setTimeout(() => CartProgressAutoInject.init(), 1000);
+  setTimeout(() => CartProgressAutoInject.init(), 3000);
+  
+})();
+</script>

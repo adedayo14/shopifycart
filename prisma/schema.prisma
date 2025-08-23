@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  shop        String
+  state       String
+  isOnline    Boolean  @default(false)
+  scope       String?
+  expires     DateTime?
+  accessToken String
+  userId      BigInt?
+  firstName   String?
+  lastName    String?
+  email       String?
+  accountOwner Boolean @default(false)
+  locale      String?
+  collaborator Boolean @default(false)
+  emailVerified Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("session")
+}
+
+model Purchase {
+  id              String   @id @default(cuid())
+  shop            String
+  chargeId        String
+  amount          Float
+  currency        String
+  test            Boolean  @default(false)
+  status          String
+  blockIds        String   // JSON string of block IDs purchased
+  purchaseType    String   // "blocks" or "subscription"
+  shopifyChargeId String?  // Shopify's internal charge ID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("purchase")
+}
+
+model Subscription {
+  id              String    @id @default(cuid())
+  shop            String
+  chargeId        String?
+  amount          Float?
+  currency        String?
+  test            Boolean   @default(false)
+  status          String    // "active", "cancelled", "expired", etc.
+  plan            String    // "starter", "pro", "enterprise"
+  trialEndsAt     DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean @default(false)
+  shopifyChargeId    String?
+  shopifySubscriptionId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("subscription")
+}
+
+model CustomBlockRequest {
+  id          String   @id @default(cuid())
+  shop        String
+  blockName   String
+  description String
+  email       String?
+  priority    String   @default("normal") // "low", "normal", "high"
+  status      String   @default("pending") // "pending", "in_progress", "completed", "rejected"
+  adminNotes  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("customBlockRequest")
+}
