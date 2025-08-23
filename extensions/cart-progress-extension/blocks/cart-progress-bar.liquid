@@ -1,0 +1,411 @@
+{% comment %}
+  Cart Progress Bar Block
+  File: extensions/cart-progress-extension/blocks/cart-progress-bar.liquid
+{% endcomment %}
+
+{{ 'cart-progress.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  Server-side calculations to provide instant progress (no "Calculating rewards...")
+{%- endcomment -%}
+{%- assign progress_mode = block.settings.progress_mode | default: 'continuous' -%}
+{%- assign free_shipping_threshold_setting = block.settings.free_shipping_threshold | default: 0 -%}
+{%- assign gift_threshold_setting = block.settings.gift_threshold | default: 0 -%}
+{%- assign free_shipping_threshold_cents = free_shipping_threshold_setting | times: 100 -%}
+{%- assign gift_threshold_cents = gift_threshold_setting | times: 100 -%}
+{%- assign subtotal_cents = cart.total_price -%}
+
+{%- comment -%} Calculate progress based on mode {%- endcomment -%}
+{%- if progress_mode == 'sequential' -%}
+  {%- comment -%} Sequential: 100% for first goal, then restart for second {%- endcomment -%}
+  {%- if free_shipping_threshold_cents > 0 and subtotal_cents < free_shipping_threshold_cents -%}
+    {%- assign progress_percent = subtotal_cents | times: 100 | divided_by: free_shipping_threshold_cents -%}
+  {%- elsif free_shipping_threshold_cents > 0 and gift_threshold_cents > 0 and subtotal_cents >= free_shipping_threshold_cents and subtotal_cents < gift_threshold_cents -%}
+    {%- assign gift_progress_cents = subtotal_cents | minus: free_shipping_threshold_cents -%}
+    {%- assign gift_needed_cents = gift_threshold_cents | minus: free_shipping_threshold_cents -%}
+    {%- assign progress_percent = gift_progress_cents | times: 100 | divided_by: gift_needed_cents -%}
+  {%- else -%}
+    {%- assign progress_percent = 100 -%}
+  {%- endif -%}
+{%- elsif progress_mode == 'highest_only' -%}
+  {%- comment -%} Focus mode: Only show progress toward highest goal {%- endcomment -%}
+  {%- assign highest_threshold_cents = 0 -%}
+  {%- if free_shipping_threshold_cents > highest_threshold_cents -%}{%- assign highest_threshold_cents = free_shipping_threshold_cents -%}{%- endif -%}
+  {%- if gift_threshold_cents > highest_threshold_cents -%}{%- assign highest_threshold_cents = gift_threshold_cents -%}{%- endif -%}
+  {%- if highest_threshold_cents > 0 -%}
+    {%- assign progress_percent = subtotal_cents | times: 100 | divided_by: highest_threshold_cents -%}
+    {%- if progress_percent > 100 -%}{%- assign progress_percent = 100 -%}{%- endif -%}
+  {%- else -%}
+    {%- assign progress_percent = 0 -%}
+  {%- endif -%}
+{%- else -%}
+  {%- comment -%} Continuous and milestone_markers mode {%- endcomment -%}
+  {%- assign highest_threshold_cents = 0 -%}
+  {%- if free_shipping_threshold_cents > highest_threshold_cents -%}{%- assign highest_threshold_cents = free_shipping_threshold_cents -%}{%- endif -%}
+  {%- if gift_threshold_cents > highest_threshold_cents -%}{%- assign highest_threshold_cents = gift_threshold_cents -%}{%- endif -%}
+  {%- if highest_threshold_cents > 0 -%}
+    {%- assign progress_percent = subtotal_cents | times: 100 | divided_by: highest_threshold_cents -%}
+    {%- if progress_percent > 100 -%}{%- assign progress_percent = 100 -%}{%- endif -%}
+  {%- else -%}
+    {%- assign progress_percent = 0 -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- assign free_shipping_achieved = false -%}
+{%- if free_shipping_threshold_cents > 0 and subtotal_cents >= free_shipping_threshold_cents -%}
+  {%- assign free_shipping_achieved = true -%}
+{%- endif -%}
+{%- assign gift_achieved = false -%}
+{%- if gift_threshold_cents > 0 and subtotal_cents >= gift_threshold_cents -%}
+  {%- assign gift_achieved = true -%}
+{%- endif -%}
+
+{%- comment -%}
+  Build initial message logic (hierarchy):
+  1. Empty cart -> initial_message
+  2. All rewards achieved -> complete_message
+  3. Free shipping not achieved -> free_shipping_message (remaining)
+  4. Free shipping achieved but gift not -> combo (free_shipping_achieved + gift_message)
+  5. Gift only configured -> gift_message / gift achieved
+{%- endcomment -%}
+{%- assign initial_message_text = block.settings.initial_message | default: 'Add items to unlock rewards' -%}
+{%- assign free_shipping_message_text = block.settings.free_shipping_message | default: 'Add [AMOUNT] more for FREE shipping!' -%}
+{%- assign free_shipping_achieved_text = block.settings.free_shipping_achieved | default: '✅ FREE shipping unlocked!' -%}
+{%- assign gift_message_text = block.settings.gift_message | default: 'Add [AMOUNT] more for your FREE gift!' -%}
+{%- assign gift_achieved_text = block.settings.gift_achieved | default: '🎁 Free gift added!' -%}
+{%- assign complete_message_text = block.settings.complete_message | default: '🎉 All rewards unlocked!' -%}
+
+{%- assign message_to_show = '' -%}
+{%- if cart.item_count == 0 -%}
+  {%- assign message_to_show = initial_message_text -%}
+{%- elsif free_shipping_threshold_cents == 0 and gift_threshold_cents == 0 -%}
+  {%- assign message_to_show = initial_message_text -%}
+{%- elsif free_shipping_achieved and gift_achieved -%}
+  {%- assign message_to_show = complete_message_text -%}
+{%- elsif free_shipping_achieved and gift_threshold_cents > 0 and gift_achieved == false -%}
+  {%- assign gift_remaining_cents = gift_threshold_cents | minus: subtotal_cents -%}
+  {%- if gift_remaining_cents < 0 -%}{%- assign gift_remaining_cents = 0 -%}{%- endif -%}
+  {%- capture remaining_money -%}{{ gift_remaining_cents | money }}{%- endcapture -%}
+  {%- if gift_message_text contains '[AMOUNT]' or gift_message_text contains '{amount}' -%}
+    {%- assign gift_progress_text = gift_message_text | replace: '[AMOUNT]', remaining_money | replace: '{amount}', remaining_money -%}
+  {%- else -%}
+    {%- assign gift_progress_text = gift_message_text | append: ' (' | append: remaining_money | append: ' left)' -%}
+  {%- endif -%}
+  {%- assign message_to_show = free_shipping_achieved_text | append: ' ' | append: gift_progress_text -%}
+{%- elsif free_shipping_achieved == false and free_shipping_threshold_cents > 0 -%}
+  {%- assign free_remaining_cents = free_shipping_threshold_cents | minus: subtotal_cents -%}
+  {%- if free_remaining_cents < 0 -%}{%- assign free_remaining_cents = 0 -%}{%- endif -%}
+  {%- capture remaining_money -%}{{ free_remaining_cents | money }}{%- endcapture -%}
+  {%- if free_shipping_message_text contains '[AMOUNT]' or free_shipping_message_text contains '{amount}' -%}
+    {%- assign message_to_show = free_shipping_message_text | replace: '[AMOUNT]', remaining_money | replace: '{amount}', remaining_money -%}
+  {%- else -%}
+    {%- assign message_to_show = free_shipping_message_text | append: ' (' | append: remaining_money | append: ' left)' -%}
+  {%- endif -%}
+{%- elsif gift_threshold_cents > 0 and gift_achieved == false -%}
+  {%- assign gift_remaining_cents = gift_threshold_cents | minus: subtotal_cents -%}
+  {%- if gift_remaining_cents < 0 -%}{%- assign gift_remaining_cents = 0 -%}{%- endif -%}
+  {%- capture remaining_money -%}{{ gift_remaining_cents | money }}{%- endcapture -%}
+  {%- if gift_message_text contains '[AMOUNT]' or gift_message_text contains '{amount}' -%}
+    {%- assign message_to_show = gift_message_text | replace: '[AMOUNT]', remaining_money | replace: '{amount}', remaining_money -%}
+  {%- else -%}
+    {%- assign message_to_show = gift_message_text | append: ' (' | append: remaining_money | append: ' left)' -%}
+  {%- endif -%}
+{%- elsif gift_achieved and free_shipping_achieved == false and free_shipping_threshold_cents == 0 -%}
+  {%- assign message_to_show = gift_achieved_text -%}
+{%- else -%}
+  {%- assign message_to_show = initial_message_text -%}
+{%- endif -%}
+
+<div class="cart-progress-container cart-progress-visible" 
+     data-cart-progress
+     data-block-id="{{ block.id }}"
+     data-progress-mode="{{ block.settings.progress_mode | default: 'continuous' }}"
+     data-free-threshold="{{ block.settings.free_shipping_threshold | default: 0 }}"
+     data-gift-threshold="{{ block.settings.gift_threshold | default: 0 }}"
+     data-gift-variant-id="{% if block.settings.gift_product %}{{ block.settings.gift_product.selected_or_first_available_variant.id }}{% endif %}"
+     data-gift-quantity="{{ block.settings.gift_quantity | default: 1 }}"
+     data-gaming-protection="{{ block.settings.gift_gaming_protection | default: 'remove' }}"
+     data-currency-symbol="{{ cart.currency.symbol }}"
+     data-progress-color="{{ block.settings.progress_color | default: '#000000' }}"
+     data-track-color="{{ block.settings.track_color | default: '#e5e5e5' }}"
+     data-message-color="{{ block.settings.message_color | default: '#121212' }}"
+     data-header-display="{{ block.settings.header_display | default: 'cart_and_percentage' }}"
+     data-milestone-color="{{ block.settings.milestone_color | default: '#666666' }}"
+     data-milestone-achieved-color="{{ block.settings.milestone_achieved_color | default: '#22c55e' }}"
+     data-achievement-symbol="{{ block.settings.achievement_symbol | default: 'checkmark' }}"
+     data-show-symbol-circle="{{ block.settings.show_symbol_circle | default: true }}"
+     data-message-free-shipping="{{ block.settings.free_shipping_message | escape }}"
+     data-message-free-achieved="{{ block.settings.free_shipping_achieved | escape }}"
+     data-message-gift="{{ block.settings.gift_message | escape }}"
+     data-message-gift-achieved="{{ block.settings.gift_achieved | escape }}"
+     data-message-initial="{{ block.settings.initial_message | escape }}"
+     data-message-complete="{{ block.settings.complete_message | escape }}">
+
+  <div class="cart-progress-header">
+    {% assign header_mode = block.settings.header_display | default: 'cart_and_percentage' %}
+    {% if header_mode == 'cart_and_percentage' or header_mode == 'cart_only' %}
+      <span class="cart-progress-title">
+        CART (<span data-cart-count>{{ cart.item_count }}</span>)
+      </span>
+    {% endif %}
+    <span class="cart-progress-message" role="status" aria-live="polite" style="color: {{ block.settings.message_color | default: '#121212' }};">
+      {{ message_to_show }}
+    </span>
+    {% if header_mode == 'cart_and_percentage' or header_mode == 'percentage_only' %}
+      <span class="cart-progress-percentage" data-progress-percentage>
+        {{ progress_percent }}%
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="cart-progress-bar-wrapper">
+    <div class="cart-progress-track" style="--track-color: {{ block.settings.track_color | default: '#e5e5e5' }};">
+      <div class="cart-progress-fill" style="width: {{ progress_percent }}%; --progress-color: {{ block.settings.progress_color | default: '#000000' }};" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+      <div class="cart-progress-milestones"></div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'cart-progress.js' | asset_url }}" defer></script>
+{%- comment -%} Removed duplicate / legacy script includes {%- endcomment -%}
+
+{%- comment -%} Auto-inject into cart drawers {%- endcomment -%}
+{% render 'cart-drawer-auto-inject' %}
+
+{% schema %}
+{
+  "name": "Cart Progress Bar",
+  "target": "section",
+  "templates": ["cart", "index", "product", "collection"],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Progress Visualization"
+    },
+    {
+      "type": "select",
+      "id": "progress_mode",
+      "label": "Progress Bar Mode",
+      "options": [
+        {
+          "value": "sequential",
+          "label": "Sequential - Fill shipping, then restart for gift"
+        },
+        {
+          "value": "continuous",
+          "label": "Continuous - Shows both goals, celebrates each"
+        },
+        {
+          "value": "milestone_markers",
+          "label": "Milestone Markers - Visual lines at each goal"
+        },
+        {
+          "value": "highest_only",
+          "label": "Focus Mode - Only shows highest reward"
+        }
+      ],
+      "default": "continuous",
+      "info": "Choose how customers see progress toward multiple rewards"
+    },
+    {
+      "type": "header",
+      "content": "Free Shipping Settings"
+    },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free Shipping Threshold",
+      "default": 50,
+      "info": "Amount in currency for free shipping (e.g., 50 for £50)"
+    },
+    {
+      "type": "text",
+      "id": "free_shipping_message",
+      "label": "Progress Message",
+      "default": "You're close to FREE shipping!",
+      "info": "If you include [AMOUNT] or {amount} it will be replaced by the remaining amount automatically. If you omit it, the amount will be appended." 
+    },
+    {
+      "type": "text",
+      "id": "free_shipping_achieved",
+      "label": "Achievement Message",
+      "default": "✅ FREE shipping unlocked!"
+    },
+    {
+      "type": "header",
+      "content": "Free Gift Settings"
+    },
+    {
+      "type": "number",
+      "id": "gift_threshold",
+      "label": "Gift Threshold",
+      "default": 0,
+      "info": "Amount needed for free gift (0 to disable)"
+    },
+    {
+      "type": "product",
+      "id": "gift_product",
+      "label": "Gift Product",
+      "info": "Select the product to give as a free gift"
+    },
+    {
+      "type": "range",
+      "id": "gift_quantity",
+      "label": "Gift Quantity",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 1,
+      "info": "Number of gift items to add"
+    },
+    {
+      "type": "select",
+      "id": "gift_gaming_protection",
+      "label": "Anti-Gaming Protection",
+      "options": [
+        {
+          "value": "remove",
+          "label": "Remove gift if below threshold"
+        },
+        {
+          "value": "keep",
+          "label": "Keep gift once added"
+        }
+      ],
+      "default": "remove",
+      "info": "How to handle threshold manipulation"
+    },
+    {
+      "type": "text",
+      "id": "gift_message",
+      "label": "Gift Progress Message",
+      "default": "You're close to your FREE gift!",
+      "info": "Use [AMOUNT] or {amount} to choose where the remaining amount appears. If omitted, it will be appended automatically." 
+    },
+    {
+      "type": "text",
+      "id": "gift_achieved",
+      "label": "Gift Achievement Message",
+      "default": "🎁 Free gift added!"
+    },
+    {
+      "type": "header",
+      "content": "General Messages"
+    },
+    {
+      "type": "text",
+      "id": "initial_message",
+      "label": "Empty Cart Message",
+      "default": "Add items to unlock rewards"
+    },
+    {
+      "type": "text",
+      "id": "complete_message",
+      "label": "All Rewards Unlocked",
+      "default": "🎉 All rewards unlocked!"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color",
+      "id": "progress_color",
+      "label": "Progress Bar Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "track_color",
+      "label": "Track Background Color",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "color",
+      "id": "message_color",
+      "label": "Message Text Color",
+      "default": "#121212",
+      "info": "Color for the progress message text"
+    },
+    {
+      "type": "select",
+      "id": "header_display",
+      "label": "Header Display Options",
+      "options": [
+        {
+          "value": "cart_and_percentage",
+          "label": "Show cart count and percentage"
+        },
+        {
+          "value": "cart_only",
+          "label": "Show cart count only"
+        },
+        {
+          "value": "percentage_only", 
+          "label": "Show percentage only"
+        },
+        {
+          "value": "message_only",
+          "label": "Message only (centered)"
+        }
+      ],
+      "default": "cart_and_percentage",
+      "info": "Choose what to display in the header alongside the progress message"
+    },
+    {
+      "type": "color",
+      "id": "milestone_color",
+      "label": "Milestone Marker Color",
+      "default": "#666666",
+      "info": "Color for milestone markers in 'Milestone Markers' mode"
+    },
+    {
+      "type": "color",
+      "id": "milestone_achieved_color",
+      "label": "Achieved Milestone Color",
+      "default": "#22c55e",
+      "info": "Color for completed milestone markers"
+    },
+    {
+      "type": "select",
+      "id": "achievement_symbol",
+      "label": "Achievement Symbol",
+      "options": [
+        {
+          "value": "checkmark",
+          "label": "✓ Checkmark"
+        },
+        {
+          "value": "check_emoji",
+          "label": "✅ Check Emoji"
+        },
+        {
+          "value": "star",
+          "label": "⭐ Star"
+        },
+        {
+          "value": "target",
+          "label": "🎯 Target"
+        },
+        {
+          "value": "trophy",
+          "label": "🏆 Trophy"
+        },
+        {
+          "value": "none",
+          "label": "No symbol (just color)"
+        }
+      ],
+      "default": "checkmark",
+      "info": "Symbol shown when milestone is achieved"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_symbol_circle",
+      "label": "Show symbol in circle",
+      "default": true,
+      "info": "Display achievement symbol inside a colored circle"
+    }
+  ]
+}
+{% endschema %}

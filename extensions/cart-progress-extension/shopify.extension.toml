@@ -5,6 +5,7 @@ api_version = "2024-10"
 
 [[extensions]]
 name = "cart-progress-extension"
+handle = "cart-progress-extension"
 type = "theme"
 
 [extensions.settings]

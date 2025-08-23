@@ -1,0 +1,206 @@
+{% comment %}
+  Product Carousel Block
+  File: extensions/product-carousel-extension/blocks/product-carousel.liquid
+{% endcomment %}
+
+{{ 'product-carousel.css' | asset_url | stylesheet_tag }}
+
+<div class="product-carousel-container" 
+     id="carousel-{{ block.id }}"
+     data-block-id="{{ block.id }}"
+     data-autoplay="{{ block.settings.autoplay }}"
+     data-autoplay-speed="{{ block.settings.autoplay_speed }}"
+     data-transition-speed="{{ block.settings.transition_speed }}">
+  
+  <div class="carousel-wrapper">
+    <!-- Left Content Section -->
+    <div class="carousel-content">
+      <div class="carousel-text-wrapper">
+        {% if block.settings.subtitle %}
+          <p class="carousel-subtitle">{{ block.settings.subtitle }}</p>
+        {% endif %}
+        
+        <h2 class="carousel-title">
+          <span class="title-main" data-title-main>{{ block.settings.title_1 | default: 'Featured Product' }}</span>
+        </h2>
+        
+        <p class="carousel-description" data-description>
+          {{ block.settings.description_1 | default: 'Discover our latest collection' }}
+        </p>
+        
+        <div class="carousel-buttons">
+          <a href="#" 
+             class="carousel-btn carousel-btn-primary" 
+             data-product-link
+             {% if block.settings.product_1 %}
+               href="{{ block.settings.product_1.url }}"
+             {% endif %}>
+            {{ block.settings.button_text | default: 'SHOP NOW' }}
+          </a>
+          
+          {% if block.settings.secondary_button_text %}
+            <a href="#" 
+               class="carousel-btn carousel-btn-secondary"
+               data-secondary-link
+               {% if block.settings.product_1 and block.settings.secondary_button_url %}
+                 href="{{ block.settings.secondary_button_url }}"
+               {% endif %}>
+              {{ block.settings.secondary_button_text }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Carousel Indicators -->
+      <div class="carousel-indicators">
+        {% for i in (1..5) %}
+          {% assign product_key = 'product_' | append: i %}
+          {% assign product = block.settings[product_key] %}
+          {% if product %}
+            <button class="indicator {% if i == 1 %}active{% endif %}" 
+                    data-slide-index="{{ i }}"
+                    aria-label="Go to slide {{ i }}">
+              <span class="indicator-dot"></span>
+            </button>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- Right Image Section -->
+    <div class="carousel-images">
+      <div class="image-container">
+        {% for i in (1..5) %}
+          {% assign product_key = 'product_' | append: i %}
+          {% assign title_key = 'title_' | append: i %}
+          {% assign desc_key = 'description_' | append: i %}
+          {% assign product = block.settings[product_key] %}
+          
+          {% if product %}
+            <div class="carousel-slide {% if i == 1 %}active{% endif %}" 
+                 data-slide="{{ i }}"
+                 data-product-url="{{ product.url }}"
+                 data-title="{{ block.settings[title_key] | default: product.title }}"
+                 data-description="{{ block.settings[desc_key] | default: product.description | truncate: 150 }}">
+              
+              <a href="{{ product.url }}" class="slide-link">
+                {% if product.featured_image %}
+                  <img src="{{ product.featured_image | image_url: width: 800 }}"
+                       alt="{{ product.title }}"
+                       width="800"
+                       height="800"
+                       loading="{% if i == 1 %}eager{% else %}lazy{% endif %}"
+                       class="slide-image">
+                {% else %}
+                  <div class="placeholder-image">
+                    {{ 'product-' | append: i | placeholder_svg_tag }}
+                  </div>
+                {% endif %}
+                
+                <!-- Optional overlay with product info -->
+                {% if block.settings.show_overlay %}
+                  <div class="slide-overlay">
+                    <h3 class="overlay-title">{{ product.title }}</h3>
+                    <p class="overlay-price">{{ product.price | money }}</p>
+                  </div>
+                {% endif %}
+              </a>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      
+      <!-- Navigation Arrows -->
+      {% if block.settings.show_arrows %}
+        <button class="carousel-nav carousel-nav-prev" aria-label="Previous slide">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <button class="carousel-nav carousel-nav-next" aria-label="Next slide">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'product-carousel.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Product Carousel",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General Settings"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subtitle",
+      "default": "COMFORT BY NATURE"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "SHOP NOW"
+    },
+    {
+      "type": "header",
+      "content": "Product"
+    },
+    {
+      "type": "product",
+      "id": "featured_product",
+      "label": "Featured Product"
+    },
+    {
+      "type": "header",
+      "content": "Carousel Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Enable Autoplay",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "label": "Autoplay Speed (seconds)",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "default": 5,
+      "unit": "s"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button Color",
+      "default": "#000000"
+    }
+  ]
+}
+{% endschema %}
