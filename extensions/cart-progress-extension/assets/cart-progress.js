@@ -464,259 +464,6 @@ console.log('[ProgressBar] Cart progress script loaded!');
   // Expose ProgressBarManager globally for auto-inject
   window.ProgressBarManager = ProgressBarManager;
 
-  /*********************************************************
-   * Cart Recommendations Manager
-   *********************************************************/
-  const CartRecommendationsManager = {
-    initialized: false,
-    
-    init() {
-      if (this.initialized) return;
-      this.initialized = true;
-      console.log('[Recommendations] Initializing recommendations...');
-      this.cacheElements();
-      this.bindEvents();
-      this.handleAutoHide();
-    },
-    
-    cacheElements() {
-      this.instances = Array.from(document.querySelectorAll('[data-cart-recommendations]'));
-      console.log(`[Recommendations] Found ${this.instances.length} recommendation instances`);
-    },
-    
-    bindEvents() {
-      // Toggle functionality
-      document.addEventListener('click', (e) => {
-        if (e.target.matches('[data-toggle-recommendations]') || e.target.closest('[data-toggle-recommendations]')) {
-          this.handleToggle(e);
-        }
-        
-        // Add to cart functionality
-        if (e.target.matches('.rec-add-btn') || e.target.closest('.rec-add-btn')) {
-          this.handleAddToCart(e);
-        }
-        
-        // Variant selection
-        if (e.target.matches('.color-swatch')) {
-          this.handleColorSelection(e);
-        }
-      });
-      
-      // Size selection
-      document.addEventListener('change', (e) => {
-        if (e.target.matches('.size-select')) {
-          this.handleSizeSelection(e);
-        }
-      });
-      
-      // Cart update events to hide products already in cart
-      ['cart:updated', 'cart:changed', 'ajaxCart:updated'].forEach(eventName => {
-        document.addEventListener(eventName, () => {
-          this.handleAutoHide();
-        });
-      });
-    },
-    
-    handleToggle(e) {
-      e.preventDefault();
-      const button = e.target.closest('[data-toggle-recommendations]');
-      const container = button.closest('[data-cart-recommendations]');
-      const content = container.querySelector('[data-recommendations-content]');
-      const isExpanded = button.getAttribute('aria-expanded') === 'true';
-      
-      button.setAttribute('aria-expanded', !isExpanded);
-      
-      if (isExpanded) {
-        content.style.maxHeight = '0';
-        content.style.opacity = '0';
-        content.classList.add('collapsed');
-      } else {
-        content.style.maxHeight = '500px';
-        content.style.opacity = '1';
-        content.classList.remove('collapsed');
-      }
-      
-      console.log(`[Recommendations] Toggled: ${!isExpanded ? 'expanded' : 'collapsed'}`);
-    },
-    
-    async handleAddToCart(e) {
-      e.preventDefault();
-      const button = e.target.closest('.rec-add-btn');
-      
-      if (button.disabled || button.classList.contains('loading')) return;
-      
-      const variantId = button.dataset.variantId;
-      const productTitle = button.dataset.productTitle;
-      const productItem = button.closest('.recommendation-item');
-      
-      if (!variantId) {
-        console.error('[Recommendations] No variant ID found');
-        return;
-      }
-      
-      // Update button state
-      this.setButtonLoading(button, true);
-      
-      try {
-        // Get updated variant ID from selections
-        const selectedVariantId = this.getSelectedVariantId(productItem) || variantId;
-        
-        const response = await fetch('/cart/add.js', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            id: selectedVariantId,
-            quantity: 1
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('[Recommendations] Added to cart:', result);
-        
-        // Trigger cart update events
-        document.dispatchEvent(new CustomEvent('cart:updated'));
-        document.dispatchEvent(new CustomEvent('cart:changed'));
-        
-        // Show success feedback
-        this.showSuccessFeedback(button, productTitle);
-        
-        // Auto-hide if enabled
-        setTimeout(() => {
-          this.handleAutoHide();
-        }, 100);
-        
-      } catch (error) {
-        console.error('[Recommendations] Add to cart error:', error);
-        this.showErrorFeedback(button);
-      } finally {
-        this.setButtonLoading(button, false);
-      }
-    },
-    
-    getSelectedVariantId(productItem) {
-      const productId = productItem.dataset.productId;
-      const selectedOptions = {};
-      
-      // Get color selection
-      const selectedColor = productItem.querySelector('.color-swatch.selected');
-      if (selectedColor) {
-        selectedOptions[selectedColor.dataset.optionName] = selectedColor.dataset.optionValue;
-      }
-      
-      // Get size selection
-      const sizeSelect = productItem.querySelector('.size-select');
-      if (sizeSelect) {
-        selectedOptions[sizeSelect.dataset.optionName] = sizeSelect.value;
-      }
-      
-      // If no options selected, return null to use default
-      if (Object.keys(selectedOptions).length === 0) {
-        return null;
-      }
-      
-      // This would need product variant data to match options to variant IDs
-      // For now, return null to use the default variant
-      console.log('[Recommendations] Selected options:', selectedOptions);
-      return null;
-    },
-    
-    handleColorSelection(e) {
-      const swatch = e.target.closest('.color-swatch');
-      const container = swatch.closest('.color-swatches');
-      
-      // Remove selected class from siblings
-      container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-      
-      // Add selected class to clicked swatch
-      swatch.classList.add('selected');
-      
-      console.log('[Recommendations] Color selected:', swatch.dataset.optionValue);
-    },
-    
-    handleSizeSelection(e) {
-      const select = e.target;
-      console.log('[Recommendations] Size selected:', select.value);
-    },
-    
-    async handleAutoHide() {
-      this.instances.forEach(async (instance) => {
-        const autoHide = instance.dataset.autoHide === 'true';
-        if (!autoHide) return;
-        
-        try {
-          const response = await fetch('/cart.js');
-          const cart = await response.json();
-          const cartVariantIds = cart.items.map(item => String(item.variant_id));
-          
-          instance.querySelectorAll('.recommendation-item').forEach(item => {
-            const variantId = item.dataset.variantId;
-            if (cartVariantIds.includes(variantId)) {
-              item.style.display = 'none';
-              console.log('[Recommendations] Hiding product already in cart:', variantId);
-            } else {
-              item.style.display = '';
-            }
-          });
-        } catch (error) {
-          console.warn('[Recommendations] Auto-hide error:', error);
-        }
-      });
-    },
-    
-    setButtonLoading(button, loading) {
-      const textSpan = button.querySelector('.btn-text');
-      const loadingSpan = button.querySelector('.btn-loading');
-      
-      if (loading) {
-        button.classList.add('loading');
-        button.disabled = true;
-        if (textSpan) textSpan.style.display = 'none';
-        if (loadingSpan) loadingSpan.style.display = 'flex';
-      } else {
-        button.classList.remove('loading');
-        button.disabled = false;
-        if (textSpan) textSpan.style.display = '';
-        if (loadingSpan) loadingSpan.style.display = 'none';
-      }
-    },
-    
-    showSuccessFeedback(button, productTitle) {
-      const originalText = button.querySelector('.btn-text').textContent;
-      const textSpan = button.querySelector('.btn-text');
-      
-      textSpan.textContent = 'Added!';
-      button.style.background = '#22c55e';
-      
-      setTimeout(() => {
-        textSpan.textContent = originalText;
-        button.style.background = '';
-      }, 2000);
-    },
-    
-    showErrorFeedback(button) {
-      const originalText = button.querySelector('.btn-text').textContent;
-      const textSpan = button.querySelector('.btn-text');
-      
-      textSpan.textContent = 'Error';
-      button.style.background = '#dc2626';
-      
-      setTimeout(() => {
-        textSpan.textContent = originalText;
-        button.style.background = '';
-      }, 2000);
-    }
-  };
-  
-  // Expose globally for auto-inject
-  window.CartRecommendationsManager = CartRecommendationsManager;
-  
   // Initialize progress bar manager ASAP
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => ProgressBarManager.init());
@@ -728,7 +475,6 @@ console.log('[ProgressBar] Cart progress script loaded!');
   setTimeout(() => {
     ProgressBarManager.cacheElements();
     ProgressBarManager.refresh();
-    CartRecommendationsManager.init();
   }, 1000);
   
   // Watch for cart drawer opening events
@@ -738,7 +484,6 @@ console.log('[ProgressBar] Cart progress script loaded!');
       setTimeout(() => {
         ProgressBarManager.cacheElements();
         ProgressBarManager.refresh();
-        CartRecommendationsManager.init();
       }, 200);
     });
   });
@@ -1107,11 +852,9 @@ console.log('[ProgressBar] Cart progress script loaded!');
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       CartUpdates.init();
-      CartRecommendationsManager.init();
     });
   } else {
     CartUpdates.init();
-    CartRecommendationsManager.init();
   }
 
   // Reinitialize on dynamic content loads

@@ -1,309 +1,260 @@
 {% comment %}
-Cart Product Recommendations Block
-File: extensions/cart-progress-extension/blocks/cart-recommendations.liquid
-Aligned with cart progress bar design
+  Cart Recommendations Block - Horizontal Scrollable
+  File: extensions/cart-recommendations-extension/blocks/cart-recommendations.liquid
 {% endcomment %}
 
-{{ 'cart-progress.css' | asset_url | stylesheet_tag }}
+{{ 'cart-recommendations.css' | asset_url | stylesheet_tag }}
 
-{%- assign layout_mode = block.settings.layout | default: 'list' -%}
-{%- assign max_products = block.settings.max_products | default: 4 -%}
-{%- assign recommendations_title = block.settings.recommendations_title | default: 'RECOMMENDED FOR YOU' -%}
-{%- assign add_button_text = block.settings.add_button_text | default: 'Add+' -%}
-
-<!-- Cart Recommendations Component -->
-{% if block.settings.recommendation_products.size > 0 or request.design_mode %}
-<div class="cart-recommendations-container cart-recommendations-visible {{ layout_mode }}" 
-     data-cart-recommendations
-     data-block-id="{{ block.id }}"
-     data-layout="{{ layout_mode }}"
-     data-auto-hide="{{ block.settings.auto_hide_in_cart }}"
-     data-max-products="{{ max_products }}">
-
-  <div class="cart-recommendations-header">
-    <span class="cart-recommendations-title">{{ recommendations_title }}</span>
-    {% if block.settings.show_toggle %}
-      <button class="cart-recommendations-toggle" 
-              aria-expanded="true" 
-              aria-controls="cart-recommendations-content"
-              data-toggle-recommendations>
-        <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+<div class="cart-recommendations-section">
+  <div class="recommendations-header">
+    <h3 class="recommendations-title">
+      {{ block.settings.title | default: 'RECOMMENDED FOR YOU' }}
+    </h3>
+    {% if block.settings.collapsible %}
+      <button class="recommendations-toggle" aria-label="Toggle" aria-expanded="true">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 7.5L10 12.5L15 7.5"/>
         </svg>
       </button>
     {% endif %}
   </div>
-  
-  <div class="cart-recommendations-content" 
-       id="cart-recommendations-content" 
-       data-recommendations-content
-       {% unless block.settings.show_toggle %}style="max-height: none; overflow: visible;"{% endunless %}>
-    
-    {% if block.settings.recommendation_products.size > 0 %}
-      <div class="recommendations-grid {{ layout_mode }}">
-        {% for product in block.settings.recommendation_products limit: max_products %}
-          {% assign first_variant = product.variants.first %}
-          {% assign available = first_variant.available %}
-          
-          <div class="recommendation-item {% unless available %}out-of-stock{% endunless %}" 
-               data-product-id="{{ product.id }}"
-               data-variant-id="{{ first_variant.id }}"
-               data-product-handle="{{ product.handle }}">
-            
-            <div class="rec-image-wrapper">
-              {% if product.featured_image %}
-                <img class="rec-image" 
-                     src="{{ product.featured_image | image_url: width: 120, height: 120, crop: 'center' }}" 
-                     alt="{{ product.title }}" 
-                     loading="lazy" 
-                     width="120" 
-                     height="120">
-              {% else %}
-                <div class="rec-image-placeholder">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <path d="M21 15l-5-5L5 21"/>
-                  </svg>
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="rec-details">
-              <h4 class="rec-title">{{ product.title | truncate: 40 }}</h4>
-              
-              {% if block.settings.show_prices %}
-                <div class="rec-price">
-                  {% if first_variant.compare_at_price and first_variant.compare_at_price > first_variant.price %}
-                    <span class="rec-price-compare">{{ first_variant.compare_at_price | money }}</span>
-                    <span class="rec-price-sale">{{ first_variant.price | money }}</span>
-                  {% else %}
-                    <span class="rec-price-regular">{{ first_variant.price | money }}</span>
-                  {% endif %}
-                </div>
-              {% endif %}
-              
-              {% if block.settings.show_variants and product.variants.size > 1 %}
-                <div class="rec-variants" data-product-variants="{{ product.id }}">
-                  {% for option in product.options limit: 2 %}
-                    {% assign option_name = option.name | downcase %}
-                    
-                    {% if option_name contains 'color' and option.values.size <= 6 %}
-                      <div class="variant-option color-swatches">
-                        <span class="variant-label">{{ option.name }}:</span>
-                        <div class="swatch-container">
-                          {% for value in option.values limit: 6 %}
-                            <button class="color-swatch {% if forloop.first %}selected{% endif %}" 
-                                    data-option-name="{{ option.name }}"
-                                    data-option-value="{{ value }}"
-                                    data-option-position="{{ option.position }}"
-                                    title="{{ value }}">
-                              <span class="swatch-color" style="background-color: {{ value | handleize }};"></span>
-                            </button>
-                          {% endfor %}
-                        </div>
-                      </div>
-                      
-                    {% elsif option_name contains 'size' %}
-                      <div class="variant-option size-selector">
-                        <span class="variant-label">{{ option.name }}:</span>
-                        <select class="size-select" 
-                                data-option-name="{{ option.name }}"
-                                data-option-position="{{ option.position }}">
-                          {% for value in option.values %}
-                            <option value="{{ value }}">{{ value }}</option>
-                          {% endfor %}
-                        </select>
-                      </div>
-                    {% endif %}
-                  {% endfor %}
-                </div>
-              {% endif %}
-              
-              <button class="rec-add-btn {% unless available %}disabled{% endunless %}" 
-                      data-variant-id="{{ first_variant.id }}" 
-                      data-product-id="{{ product.id }}"
-                      data-product-title="{{ product.title | escape }}"
-                      data-product-handle="{{ product.handle }}"
-                      {% unless available %}disabled{% endunless %}>
-                {% if available %}
-                  <span class="btn-text">{{ add_button_text }}</span>
-                  <span class="btn-loading" style="display: none;">
-                    <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                    </svg>
-                  </span>
-                {% else %}
-                  <span class="btn-text">Sold Out</span>
-                {% endif %}
-              </button>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    
-    {% elsif request.design_mode %}
-      <!-- Theme Editor Fallback when no products selected -->
-      <div class="recommendations-grid {{ layout_mode }}">
-        <div class="recommendation-item theme-editor-placeholder">
-          <div class="rec-image-wrapper">
-            <div class="rec-image-placeholder">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <path d="M21 15l-5-5L5 21"/>
-              </svg>
-            </div>
-          </div>
-          <div class="rec-details">
-            <h4 class="rec-title">Sample Product</h4>
-            <div class="rec-price">
-              <span class="rec-price-regular">$29.99</span>
-            </div>
-            <button class="rec-add-btn disabled" disabled>
-              <span class="btn-text">Add+</span>
-            </button>
-          </div>
-        </div>
-        
-        <div class="recommendation-item theme-editor-placeholder">
-          <div class="rec-image-wrapper">
-            <div class="rec-image-placeholder">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <path d="M21 15l-5-5L5 21"/>
-              </svg>
-            </div>
-          </div>
-          <div class="rec-details">
-            <h4 class="rec-title">Another Product</h4>
-            <div class="rec-price">
-              <span class="rec-price-compare">$49.99</span>
-              <span class="rec-price-sale">$39.99</span>
-            </div>
-            <button class="rec-add-btn disabled" disabled>
-              <span class="btn-text">Add+</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 14px; color: #0c4a6e;">
-        📝 <strong>Theme Editor:</strong> Select products in the "Recommended Products" setting to display real recommendations.
+
+  <div class="recommendations-container-wrapper" style="position:relative;"
+       data-success-enabled="{{ block.settings.show_success_feedback }}"
+       data-success-color="{{ block.settings.success_feedback_color }}"
+       data-hide-in-cart="{{ block.settings.hide_in_cart }}">
+  {% if block.settings.show_arrows %}
+      <div class="carousel-controls fixed" data-for="{{ block.id }}">
+        <button class="carousel-arrow prev" aria-label="Previous">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5l-5 5 5 5"/>
+          </svg>
+        </button>
+        <button class="carousel-arrow next" aria-label="Next">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 5l5 5-5 5"/>
+          </svg>
+        </button>
       </div>
     {% endif %}
+    <div class="recommendations-container" data-block-id="{{ block.id }}">
+    <div class="recommendations-track">
+      {% comment %} Get products based on source {% endcomment %}
+      {% if block.settings.source == 'collection' and block.settings.collection %}
+        {% assign recommendations = block.settings.collection.products %}
+        {% assign max_products = 8 %}
+      {% elsif block.settings.source == 'manual' %}
+        {% comment %} Use manually selected products from product_list {% endcomment %}
+        {% assign recommendations = '' | split: '' %}
+        {% if block.settings.manual_products != blank %}
+          {% assign recommendations = block.settings.manual_products %}
+        {% endif %}
+        {% assign max_products = 8 %}
+      {% else %}
+        {% comment %} Default fallback collection list (limit later) {% endcomment %}
+        {% assign recommendations = collections.all.products %}
+        {% assign max_products = 4 %}
+      {% endif %}
+
+      {% comment %} Get current cart item IDs for hiding {% endcomment %}
+      {% assign cart_product_ids = cart.items | map: 'product_id' %}
+
+  {% for product in recommendations limit: max_products %}
+        {% comment %} Check if product should be hidden {% endcomment %}
+        {% assign should_hide = false %}
+        {% if block.settings.hide_in_cart %}
+          {% if cart_product_ids contains product.id %}
+            {% assign should_hide = true %}
+          {% endif %}
+        {% endif %}
+
+  {% unless should_hide %}
+          <div class="recommendation-card" data-product-id="{{ product.id }}">
+            <div class="card-content">
+              <a href="{{ product.url }}" class="product-image product-link" aria-label="View {{ product.title }}">
+                {% if product.featured_image %}
+                  {{ product.featured_image | image_url: width: 300 | image_tag: loading: 'lazy', alt: product.title, class: 'recommendation-image' }}
+                {% else %}
+                  {{ 'product-' | append: forloop.index | placeholder_svg_tag }}
+                {% endif %}
+              </a>
+              
+              <div class="product-info">
+                <h4 class="product-name"><a href="{{ product.url }}" class="product-link">{{ product.title }}</a></h4>
+                <p class="product-price">{{ product.price | money }}</p>
+                
+                {% if product.has_only_default_variant == false %}
+                  {% comment %} Color swatches {% endcomment %}
+                  <div class="color-options">
+                    {% assign rendered_colors_tracker = '|' %}
+                    {% assign color_count = 0 %}
+                    {% for variant in product.variants %}
+                      {% if color_count >= 7 %}{% break %}{% endif %}
+                      {% assign color_value = variant.option1 %}
+                      {% assign search_token = '|' | append: color_value | append: '|' %}
+                      {% if color_value and rendered_colors_tracker contains search_token %}
+                        {% continue %}
+                      {% endif %}
+                      {% assign rendered_colors_tracker = rendered_colors_tracker | append: color_value | append: '|' %}
+                      {% assign color_handle = color_value | handleize %}
+                      <button class="color-swatch {% if color_count == 0 %}active{% endif %}"
+                              data-color="{{ color_value }}"
+                              data-variant-id="{{ variant.id }}"
+                              aria-label="{{ color_value }}"
+                              style="--swatch-color: var(--color-{{ color_handle }}, #{{ color_handle | remove: '-' | truncate: 6, '' }});">
+                      </button>
+                      {% assign color_count = color_count | plus: 1 %}
+                    {% endfor %}
+                  </div>
+
+                  {% comment %} Size selector and add button in one row {% endcomment %}
+                  <div class="product-actions">
+                    {% assign second_option_name = product.options[1] | default: 'Option' %}
+                    <select class="size-select" data-product-id="{{ product.id }}">
+                      <option value="">Select {{ second_option_name }}</option>
+                      {% for variant in product.variants %}
+                        {% if variant.available %}
+                          <option value="{{ variant.id }}" data-price="{{ variant.price | money }}">
+                            {{ variant.option2 | default: variant.title }}
+                          </option>
+                        {% endif %}
+                      {% endfor %}
+                    </select>
+                    <button class="add-btn"
+                            data-product-id="{{ product.id }}"
+                            data-variant-id="{{ product.selected_or_first_available_variant.id }}">
+                      Add+
+                    </button>
+                  </div>
+                {% else %}
+                  {% comment %} Simple product with single variant {% endcomment %}
+                  <div class="product-actions single">
+                    <button class="add-btn full-width" 
+                            data-product-id="{{ product.id }}"
+                            data-variant-id="{{ product.selected_or_first_available_variant.id }}">
+                      Add+
+                    </button>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endunless %}
+      {% endfor %}
+    </div>
+    
+    </div>
   </div>
 </div>
 
-{%- comment -%} Auto-inject into cart drawers {%- endcomment -%}
-{% render 'cart-drawer-auto-inject' %}
+<script src="{{ 'cart-recommendations.js' | asset_url }}" defer></script>
 
-{% endif %}
-
-<script src="{{ 'cart-progress.js' | asset_url }}" defer></script>
+<style>
+  /* Dynamic color swatches */
+  .color-swatch {
+    --color-white: #ffffff;
+    --color-black: #000000;
+    --color-grey: #808080;
+    --color-gray: #808080;
+    --color-navy: #001f3f;
+    --color-blue: #0074d9;
+    --color-blizzard: #f0f8ff;
+    --color-natural-black: #1a1a1a;
+    --color-pink: #ff69b4;
+    --color-beige: #f5f5dc;
+    --color-tan: #d2b48c;
+    --color-brown: #8b4513;
+    --color-green: #2ecc40;
+    --color-olive: #3d9970;
+  }
+</style>
 
 {% schema %}
 {
   "name": "Cart Recommendations",
   "target": "section",
-  "templates": ["cart", "index", "product", "collection"],
   "settings": [
     {
       "type": "header",
-      "content": "Content Settings"
+      "content": "General Settings"
     },
     {
       "type": "text",
-      "id": "recommendations_title",
-      "label": "Section Title",
-      "default": "RECOMMENDED FOR YOU",
-      "info": "Title shown above recommended products"
-    },
-    {
-      "type": "product_list",
-      "id": "recommendation_products",
-      "label": "Recommended Products",
-      "limit": 12,
-      "info": "Select up to 12 products to recommend to customers"
-    },
-    {
-      "type": "range",
-      "id": "max_products",
-      "label": "Max Products to Show",
-      "min": 1,
-      "max": 12,
-      "default": 4,
-      "step": 1,
-      "info": "Maximum number of products to display at once"
-    },
-    {
-      "type": "text",
-      "id": "add_button_text",
-      "label": "Add Button Text",
-      "default": "Add+",
-      "info": "Text shown on add to cart buttons"
-    },
-    {
-      "type": "header",
-      "content": "Display Options"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_prices",
-      "label": "Show Product Prices",
-      "default": true,
-      "info": "Display product prices including sale prices"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_variants",
-      "label": "Show Color/Size Options",
-      "default": true,
-      "info": "Allow customers to select product variants"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_toggle",
-      "label": "Show Collapse/Expand Toggle",
-      "default": true,
-      "info": "Add a toggle button to collapse/expand the recommendations"
-    },
-    {
-      "type": "header",
-      "content": "Layout"
+      "id": "title",
+      "label": "Title",
+      "default": "RECOMMENDED FOR YOU"
     },
     {
       "type": "select",
-      "id": "layout",
-      "label": "Layout Style",
-      "default": "list",
+      "id": "source",
+      "label": "Product Source",
       "options": [
         {
-          "label": "List (Stacked rows)",
-          "value": "list"
+          "value": "collection",
+          "label": "From Collection"
         },
         {
-          "label": "Grid (2 columns)",
-          "value": "grid-2"
-        },
-        {
-          "label": "Grid (3 columns)",
-          "value": "grid-3"
+          "value": "manual",
+          "label": "Manual Selection"
         }
       ],
-      "info": "Choose how products are displayed"
+      "default": "collection"
     },
     {
       "type": "header",
-      "content": "Behavior"
+      "content": "Collection Selection"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "Select a collection for automatic recommendations"
+    },
+    {
+      "type": "header",
+      "content": "Manual Product Selection"
+    },
+    {
+      "type": "product_list",
+      "id": "manual_products",
+      "label": "Select Products",
+      "info": "Choose up to 8 products to recommend",
+      "limit": 8
+    },
+    {
+      "type": "header",
+      "content": "Display Settings"
     },
     {
       "type": "checkbox",
-      "id": "auto_hide_in_cart",
+      "id": "hide_in_cart",
       "label": "Hide products already in cart",
-      "default": false,
-      "info": "Automatically hide recommended products that are already added to cart"
+      "default": true,
+      "info": "Don't show recommended products that are already in the customer's cart"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "Show Navigation Arrows",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_success_feedback",
+      "label": "Show success toast on add",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "success_feedback_color",
+      "label": "Success feedback color",
+      "default": "#22c55e"
+    },
+    {
+      "type": "checkbox",
+      "id": "collapsible",
+      "label": "Collapsible Section",
+      "default": true
     }
   ]
 }

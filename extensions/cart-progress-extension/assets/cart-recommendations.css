@@ -1,0 +1,436 @@
+/* Cart Recommendations - Horizontal Scrollable Layout */
+/* File: extensions/cart-recommendations-extension/assets/cart-recommendations.css */
+
+.cart-recommendations-section {
+  width: 100%;
+  background: #f5f5f5;
+  padding: 20px 0;
+  margin: 20px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header */
+.recommendations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 15px;
+}
+
+.recommendations-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #000;
+  margin: 0;
+}
+
+.recommendations-toggle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.recommendations-toggle[aria-expanded="false"] {
+  transform: rotate(180deg);
+}
+
+.recommendations-toggle svg {
+  width: 16px;
+  height: 16px;
+  color: #333;
+}
+
+/* Container */
+.recommendations-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px 40px;
+  position: relative;
+}
+
+/* Section wrapper for fixed positioning */
+.cart-recommendations-section {
+  width: 100%;
+  background: #f5f5f5;
+  padding: 20px 0;
+  margin: 20px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  position: relative;
+}
+
+/* Navigation Controls - fixed overlay */
+.carousel-controls.fixed {
+  position: absolute;
+  right: 20px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: none; /* let clicks pass except buttons */
+}
+
+.carousel-controls.fixed .carousel-arrow { pointer-events: auto; }
+
+.carousel-arrow {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.carousel-arrow:hover {
+  background: #f0f0f0;
+  border-color: #999;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.carousel-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.carousel-arrow svg {
+  width: 16px;
+  height: 16px;
+  color: #333;
+}
+
+/* Hide scrollbar completely */
+.recommendations-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* For Firefox */
+.recommendations-container {
+  scrollbar-width: none;
+}
+
+/* Track */
+.recommendations-track {
+  display: flex;
+  gap: 15px;
+  padding-bottom: 10px;
+}
+
+/* Card */
+.recommendation-card {
+  flex: 0 0 300px;
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+.recommendation-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+.card-content {
+  display: flex;
+  gap: 15px;
+  height: 100%;
+}
+
+/* Product Image */
+.product-image {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-image svg {
+  width: 60%;
+  height: 60%;
+  opacity: 0.3;
+}
+
+/* Product Info */
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+  margin: 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Neutral link styling for product links */
+.product-link {
+  color: inherit;
+  text-decoration: none;
+}
+.product-link:hover, .product-link:focus {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+}
+
+/* Color Options */
+.color-options {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: var(--swatch-color, #ccc);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+  border-color: #666;
+}
+
+.color-swatch.active {
+  border: 2px solid #000;
+  box-shadow: 0 0 0 1px white inset;
+}
+
+/* White swatch special case */
+.color-swatch[data-color*="white"],
+.color-swatch[data-color*="blizzard"] {
+  background: white;
+  border: 1px solid #ccc;
+}
+
+/* Product Actions */
+.product-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.size-select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #000;
+  border-radius: 20px;
+  background: white;
+  font-size: 12px;
+  font-weight: 500;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.size-select:focus {
+  outline: none;
+  border-color: #666;
+}
+
+.add-btn {
+  padding: 8px 16px;
+  background: transparent;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.add-btn:hover {
+  background: #000;
+  color: white;
+}
+
+.add-btn.full-width {
+  flex: 1;
+}
+
+.add-btn.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-btn.added {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: white;
+}
+
+/* Collapsed state */
+.recommendations-container.collapsed {
+  display: none;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .cart-recommendations-section {
+    padding: 15px 0;
+    margin: 15px 0;
+  }
+
+  .recommendations-header {
+    padding: 0 15px 12px;
+  }
+
+  .recommendations-container {
+    padding: 0 15px;
+  }
+
+  .recommendation-card {
+    flex: 0 0 280px;
+    padding: 12px;
+  }
+
+  .product-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .product-name {
+    font-size: 13px;
+  }
+
+  .product-price {
+    font-size: 15px;
+  }
+
+  .color-swatch {
+    width: 20px;
+    height: 20px;
+  }
+
+  .size-select {
+    font-size: 11px;
+    padding: 7px 8px;
+    padding-right: 24px;
+  }
+
+  .add-btn {
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+}
+
+/* Drawer/Sidebar specific */
+.cart-drawer .cart-recommendations-section,
+.drawer .cart-recommendations-section,
+[data-cart-drawer] .cart-recommendations-section {
+  margin: 0;
+  padding: 15px 0;
+  background: #fafafa;
+}
+
+.cart-drawer .recommendations-container,
+.drawer .recommendations-container {
+  padding: 0 15px;
+}
+
+.cart-drawer .recommendation-card,
+.drawer .recommendation-card {
+  flex: 0 0 260px;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .cart-recommendations-section {
+    background: #1a1a1a;
+  }
+
+  .recommendation-card {
+    background: #2a2a2a;
+  }
+
+  .recommendations-title,
+  .product-name,
+  .product-price {
+    color: #e0e0e0;
+  }
+
+  .carousel-arrow,
+  .recommendations-toggle {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  .carousel-arrow svg,
+  .recommendations-toggle svg {
+    color: #e0e0e0;
+  }
+
+  .size-select {
+    background: #2a2a2a;
+    border-color: #666;
+    color: #e0e0e0;
+  }
+
+  .add-btn {
+    border-color: #e0e0e0;
+    color: #e0e0e0;
+  }
+
+  .add-btn:hover {
+    background: #e0e0e0;
+    color: #1a1a1a;
+  }
+}
